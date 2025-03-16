@@ -1,0 +1,13 @@
+from: markdown
+to: docx
+standalone: true
+variables:
+  documentclass: article
+filters:
+  - type: omml
+    options:
+      native-math: true
+      docx-math: true
+      no-mathml: false
+metadata:
+  title: ""
