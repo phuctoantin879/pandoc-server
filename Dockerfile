@@ -1,27 +1,21 @@
-# Sử dụng image pandoc/latex làm base (có hỗ trợ Pandoc và LaTeX)
-FROM pandoc/latex:latest
+FROM pandoc/core:3.4 AS pandoc-base
 
-# Cài đặt Python3, pip và các gói cần thiết cho API server
-RUN apt-get update && apt-get install -y python3 python3-pip && \
-    rm -rf /var/lib/apt/lists/*
+# Giai đoạn thứ hai: Xây dựng ứng dụng Flask
+FROM python:3.9-slim
 
-# Thiết lập thư mục làm việc
+# Sao chép pandoc từ image pandoc/core
+COPY --from=pandoc-base /usr/local/bin/pandoc /usr/local/bin/
+COPY --from=pandoc-base /usr/local/share/pandoc /usr/local/share/pandoc
+
 WORKDIR /app
 
-# Sao chép requirements.txt trước để tận dụng Docker cache
 COPY requirements.txt .
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Sao chép các file ứng dụng vào container
 COPY app.py .
 COPY docx-equation-fix.yaml .
 
-# Thiết lập biến môi trường
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 
-# Expose cổng để API server lắng nghe
-EXPOSE 8000
-
-# Chạy server với gunicorn
-CMD gunicorn --bind 0.0.0.0:$PORT app:app --workers 4
+CMD gunicorn app:app --bind 0.0.0.0:$PORT --workers 2
